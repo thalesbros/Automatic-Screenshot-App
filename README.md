@@ -59,7 +59,7 @@ To download the latest version of Automatic Screenshot App, please visit the [Re
 To build the app for distribution on all platforms, run:
 ```
 npm i install
-npm run dist && npm run dist -- --win && npm run dist -- --linux
+npm run dist -- --mac && npm run dist -- --win && npm run dist -- --linux
 ```
 
 This command uses electron-builder to package your app into platform-specific installers.

@@ -5,14 +5,17 @@ const screenshot = require('screenshot-desktop');
 const { autoUpdater } = require('electron-updater');
 const sharp = require('sharp');
 
-if (!app.isPackaged) {
-    require('electron-reload')(__dirname, {
-        electron: require(path.join(__dirname, 'node_modules', 'electron'))
-    });
-}
+// process.env.DEBUG = 'electron-updater';
+
+// if (!app.isPackaged) {
+//     require('electron-reload')(__dirname, {
+//         electron: require(path.join(__dirname, 'node_modules', 'electron'))
+//     });
+// }
 
 let mainWindow;
 let tray;
+let updateAvailable = false;
 let captureInterval = null;
 let isCapturing = false;
 let currentIntervalMinutes = 10;
@@ -20,15 +23,14 @@ let saveDirectory = '';
 let allowedStartTime = '';
 let allowedEndTime = '';
 let allowedDays = [];
-// New globals for image settings
-let screenshotDimension = 100; // default 100%
-let screenshotQuality = 100;   // default 100%
+let screenshotDimension = 100;
+let screenshotQuality = 100;
 
 let systemLocked = false;
 powerMonitor.on('lock-screen', () => { systemLocked = true; });
 powerMonitor.on('unlock-screen', () => { systemLocked = false; });
 
-autoUpdater.autoDownload = false;
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 function createWindow() {
@@ -46,7 +48,13 @@ function createWindow() {
     mainWindow.loadFile('index.html');
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.send('app-version', app.getVersion());
+
+        // RESEND update pill color if updateAvailable is already true
+        if (updateAvailable) {
+            mainWindow.webContents.send('update-status', { hasUpdate: true });
+        }
     });
+
     mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -56,10 +64,15 @@ function createTray() {
     tray.setToolTip('Screenshot App');
     tray.on('click', () => {
         if (mainWindow) {
-            mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+            if (mainWindow.isVisible()) {
+                mainWindow.hide();
+            } else {
+                mainWindow.show();
+            }
         } else {
             createWindow();
         }
+        autoUpdater.checkForUpdates();
     });
 }
 
@@ -222,18 +235,27 @@ ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
 });
 
-// Auto-updater events
 autoUpdater.on('checking-for-update', () => {
     console.log('Checking for update...');
 });
+
 autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info);
-    // Force the update download
-    autoUpdater.downloadUpdate();
+    updateAvailable = true;
+
+    autoUpdater.downloadUpdate()
+        .then(() => {
+            console.log('✅ downloadUpdate() resolved');
+        })
+        .catch(err => {
+            console.error('❌ downloadUpdate() failed:', err);
+        });
+
     if (mainWindow) {
-        mainWindow.webContents.send('update-status', { hasUpdate: true });
+        mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable });
     }
 });
+
 
 autoUpdater.on('update-not-available', (info) => {
     console.log('Update not available:', info);
@@ -241,14 +263,22 @@ autoUpdater.on('update-not-available', (info) => {
         mainWindow.webContents.send('update-status', { hasUpdate: false });
     }
 });
+
 autoUpdater.on('error', (err) => {
     console.error('Error in auto-updater:', err);
 });
+
 autoUpdater.on('download-progress', (progressObj) => {
     console.log('Download progress:', progressObj);
 });
+
 autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded:', info);
+    console.log('✅ update-downloaded event fired:', info);
+    updateAvailable = true;
+    if (mainWindow) {
+        mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable }); // <-- ensures pill turns yellow again
+    }
+
     const dialogOpts = {
         type: 'info',
         buttons: ['Restart', 'Later'],
@@ -257,17 +287,42 @@ autoUpdater.on('update-downloaded', (info) => {
         detail: 'Restart the application to apply the updates.'
     };
 
-    dialog.showMessageBox(dialogOpts).then((returnValue) => {
-        if (returnValue.response === 0) {
-            autoUpdater.quitAndInstall();
+    dialog.showMessageBox({
+        type: 'info',
+        buttons: process.platform === 'darwin' ? ['Open GitHub', 'Later'] : ['Restart', 'Later'],
+        title: 'Application Update',
+        message: 'A new version has been downloaded.',
+        detail: process.platform === 'darwin'
+            ? 'Visit GitHub to manually download the update.'
+            : 'Restart the application to apply the update.'
+    }).then((result) => {
+        if (result.response === 0) {
+            if (process.platform === 'darwin') {
+                shell.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
+            } else {
+                autoUpdater.quitAndInstall();
+            }
         }
     });
+
 });
 
 app.on('ready', () => {
     createWindow();
     createTray();
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdates();
 });
+
+app.on('activate', () => {
+    if (!mainWindow) {
+        createWindow();
+    } else {
+        mainWindow.show();
+        if (updateAvailable) {
+            mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable });
+        }
+        autoUpdater.checkForUpdates(); // always recheck
+    }
+});
+
 app.on('window-all-closed', () => { });
-app.on('activate', () => { if (!mainWindow) createWindow(); });
