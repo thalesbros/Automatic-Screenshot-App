@@ -2,16 +2,8 @@ const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, shell, powerMonitor } =
 const path = require('path');
 const fs = require('fs');
 const screenshot = require('screenshot-desktop');
-const { autoUpdater } = require('electron-updater');
 const sharp = require('sharp');
-
-// process.env.DEBUG = 'electron-updater';
-
-// if (!app.isPackaged) {
-//     require('electron-reload')(__dirname, {
-//         electron: require(path.join(__dirname, 'node_modules', 'electron'))
-//     });
-// }
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let tray;
@@ -30,9 +22,6 @@ let systemLocked = false;
 powerMonitor.on('lock-screen', () => { systemLocked = true; });
 powerMonitor.on('unlock-screen', () => { systemLocked = false; });
 
-autoUpdater.autoDownload = true;
-autoUpdater.autoInstallOnAppQuit = true;
-
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 500,
@@ -48,13 +37,10 @@ function createWindow() {
     mainWindow.loadFile('index.html');
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.send('app-version', app.getVersion());
-
-        // RESEND update pill color if updateAvailable is already true
         if (updateAvailable) {
             mainWindow.webContents.send('update-status', { hasUpdate: true });
         }
     });
-
     mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -72,13 +58,12 @@ function createTray() {
         } else {
             createWindow();
         }
-        autoUpdater.checkForUpdates();
     });
 }
 
 function setTrayMenu() {
     const toggleLabel = isCapturing ? 'Stop App' : 'Start App';
-    const trayMenu = Menu.buildFromTemplate([
+    const trayMenuTemplate = [
         {
             label: toggleLabel,
             click: () => {
@@ -87,10 +72,24 @@ function setTrayMenu() {
                     mainWindow.webContents.send('menu-toggle');
                 }
             }
-        },
+        }
+    ];
+
+    if (updateAvailable) {
+        trayMenuTemplate.push({
+            label: 'Update App',
+            click: () => {
+                shell.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
+            }
+        });
+    }
+
+    trayMenuTemplate.push(
         { type: 'separator' },
         { label: 'Quit App', click: () => { app.quit(); } }
-    ]);
+    );
+
+    const trayMenu = Menu.buildFromTemplate(trayMenuTemplate);
     tray.setContextMenu(trayMenu);
 }
 
@@ -120,8 +119,6 @@ function isAllowedDay() {
     }
     const now = new Date();
     const currentDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][now.getDay()];
-    console.log("Allowed days:", allowedDays);
-    console.log("Current day:", currentDay);
     return allowedDays.includes(currentDay);
 }
 
@@ -133,27 +130,12 @@ function isWithinAllowedTime() {
     const [endHour, endMinute] = allowedEndTime.split(':').map(Number);
     const startTotal = startHour * 60 + startMinute;
     const endTotal = endHour * 60 + endMinute;
-    const currentHours = String(now.getHours()).padStart(2, '0');
-    const currentMins = String(now.getMinutes()).padStart(2, '0');
-    const currentTime = `${currentHours}:${currentMins}`;
-    console.log(`Allowed time: ${allowedStartTime}-${allowedEndTime}`);
-    console.log(`Current time: ${currentTime}`);
     return currentMinutes >= startTotal && currentMinutes <= endTotal;
 }
 
 function takeScreenshot() {
-    if (!isAllowedDay()) {
-        console.log("Today is not selected, skipping screenshot.");
-        return;
-    }
-    if (systemLocked) {
-        console.log('System is locked or asleep, skipping screenshot.');
-        return;
-    }
-    if (!isWithinAllowedTime()) {
-        console.log('Not within allowed time range, skipping screenshot.');
-        return;
-    }
+    if (!isAllowedDay() || systemLocked || !isWithinAllowedTime()) return;
+
     const dateFolder = getCurrentDateFolder();
     const dayPath = path.join(saveDirectory, dateFolder);
     if (!fs.existsSync(dayPath)) fs.mkdirSync(dayPath, { recursive: true });
@@ -167,20 +149,11 @@ function takeScreenshot() {
                     if (screenshotDimension < 100) {
                         sharp(img)
                             .metadata()
-                            .then(metadata => {
-                                const newWidth = Math.round(metadata.width * (screenshotDimension / 100));
-                                return sharp(img).resize({ width: newWidth }).toBuffer();
-                            })
-                            .then(resizedImg => {
-                                fs.writeFile(path.join(dayPath, fileName), resizedImg, err => {
-                                    if (err) console.error(err);
-                                });
-                            })
+                            .then(metadata => sharp(img).resize({ width: Math.round(metadata.width * (screenshotDimension / 100)) }).toBuffer())
+                            .then(resizedImg => fs.writeFile(path.join(dayPath, fileName), resizedImg, err => { if (err) console.error(err); }))
                             .catch(err => console.error("Error resizing image:", err));
                     } else {
-                        fs.writeFile(path.join(dayPath, fileName), img, err => {
-                            if (err) console.error(err);
-                        });
+                        fs.writeFile(path.join(dayPath, fileName), img, err => { if (err) console.error(err); });
                     }
                 })
                 .catch(err => console.error(err));
@@ -230,87 +203,14 @@ ipcMain.on('open-save-folder', (event, directory) => {
     }
 });
 
-// External link handler
 ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
-});
-
-autoUpdater.on('checking-for-update', () => {
-    console.log('Checking for update...');
-});
-
-autoUpdater.on('update-available', (info) => {
-    console.log('Update available:', info);
-    updateAvailable = true;
-
-    autoUpdater.downloadUpdate()
-        .then(() => {
-            console.log('✅ downloadUpdate() resolved');
-        })
-        .catch(err => {
-            console.error('❌ downloadUpdate() failed:', err);
-        });
-
-    if (mainWindow) {
-        mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable });
-    }
-});
-
-
-autoUpdater.on('update-not-available', (info) => {
-    console.log('Update not available:', info);
-    if (mainWindow) {
-        mainWindow.webContents.send('update-status', { hasUpdate: false });
-    }
-});
-
-autoUpdater.on('error', (err) => {
-    console.error('Error in auto-updater:', err);
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-    console.log('Download progress:', progressObj);
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-    console.log('✅ update-downloaded event fired:', info);
-    updateAvailable = true;
-    if (mainWindow) {
-        mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable }); // <-- ensures pill turns yellow again
-    }
-
-    const dialogOpts = {
-        type: 'info',
-        buttons: ['Restart', 'Later'],
-        title: 'Application Update',
-        message: 'A new version has been downloaded.',
-        detail: 'Restart the application to apply the updates.'
-    };
-
-    dialog.showMessageBox({
-        type: 'info',
-        buttons: process.platform === 'darwin' ? ['Open GitHub', 'Later'] : ['Restart', 'Later'],
-        title: 'Application Update',
-        message: 'A new version has been downloaded.',
-        detail: process.platform === 'darwin'
-            ? 'Visit GitHub to manually download the update.'
-            : 'Restart the application to apply the update.'
-    }).then((result) => {
-        if (result.response === 0) {
-            if (process.platform === 'darwin') {
-                shell.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
-            } else {
-                autoUpdater.quitAndInstall();
-            }
-        }
-    });
-
 });
 
 app.on('ready', () => {
     createWindow();
     createTray();
-    autoUpdater.checkForUpdates();
+    // Placeholder: here you could check if update is needed and set updateAvailable = true, then call setTrayMenu()
 });
 
 app.on('activate', () => {
@@ -320,8 +220,8 @@ app.on('activate', () => {
         mainWindow.show();
         if (updateAvailable) {
             mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable });
+            setTrayMenu();
         }
-        autoUpdater.checkForUpdates(); // always recheck
     }
 });
 

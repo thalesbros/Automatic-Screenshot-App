@@ -51,15 +51,15 @@ To download the latest version of Automatic Screenshot App, please visit the [Re
 8. **Tray Menu:**
    - Right-click the tray icon to toggle the screenshot process or to quit the app.
 
-9. **Auto-Updating:**
-   - The app automatically checks for updates. If a newer version is available, the dynamic version pill turns yellow and a popup prompts you to restart the app to install the update.
+9. **Update Prompt with GitHub Link:**
+   - The app checks for updates on startup. If a new version is available, it highlights the version badge in yellow and shows a popup with "Update" and "Later" options. Clicking "Update" opens the GitHub Releases page to download the latest version manually.
 
 ## Building and Packaging
 
 To build the app for distribution on all platforms, run:
 ```
 npm i install
-npm run dist -- --mac && npm run dist -- --win && npm run dist -- --linux
+npm run publish -- --mac && npm run publish -- --win && npm run publish -- --linux
 ```
 
 This command uses electron-builder to package your app into platform-specific installers.
