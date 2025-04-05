@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Screenshot App</title>
+    <!-- Local Bootstrap CSS -->
+    <link href="./node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            overflow: hidden;
+            /* Prevent scrolling */
+        }
+
+        .btn-success {
+            background-color: #16D00E !important;
+            border-color: #16D00E !important;
+        }
+
+        .btn-danger {
+            background-color: #C60000 !important;
+            border-color: #C60000 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container py-4">
+        <h1 class="mb-4 text-center">Automatic Screenshot App</h1>
+        <hr>
+        <div class="mb-3 text-center">
+            <label for="interval" class="form-label">Take screenshot in X minutes:</label>
+            <input type="number" id="interval" class="form-control mx-auto" value="10" min="1" max="60" step="5"
+                style="width: 100px;" required>
+        </div>
+        <div class="mb-3 text-center">
+            <label for="directory" class="form-label">Save directory:</label>
+            <div class="input-group">
+                <input type="text" id="directory" class="form-control" readonly required>
+                <button id="browse" class="btn btn-outline-secondary" type="button">Browse</button>
+            </div>
+        </div>
+        <div class="mb-3 text-center">
+            <label class="form-label d-block">Takes screenshots from</label>
+            <div class="d-inline-flex align-items-center">
+                <!-- The native time picker will display in 24-hour or AM/PM format according to your system settings -->
+                <input type="time" id="startTime" class="form-control" style="width: 150px;" required>
+                <span class="mx-2">to</span>
+                <input type="time" id="endTime" class="form-control" style="width: 150px;" required>
+            </div>
+        </div>
+        <!-- Centered "Open Save Folder" button -->
+        <div class="mb-3 text-center">
+            <button id="open-folder" class="btn btn-primary btn-sm">Open Save Folder</button>
+        </div>
+        <!-- Full-width, large toggle button -->
+        <button id="toggle" class="btn btn-success btn-lg w-100">Start</button>
+    </div>
+    <!-- Local Bootstrap JS bundle -->
+    <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="renderer.js"></script>
+</body>
+
+</html>
