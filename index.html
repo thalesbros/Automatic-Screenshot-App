@@ -29,6 +29,7 @@
     <div class="container py-4">
         <h1 class="mb-4 text-center">Automatic Screenshot App</h1>
         <hr>
+        <!-- Interval Input -->
         <div class="mb-3 text-center">
             <label for="interval" class="form-label">
                 Take screenshot every <span id="intervalValue">10</span> minutes:
@@ -36,6 +37,7 @@
             <input type="number" id="interval" class="form-control mx-auto" value="10" min="5" max="60" step="5"
                 style="width: 100px;" required>
         </div>
+        <!-- Save Directory -->
         <div class="mb-3 text-center">
             <label for="directory" class="form-label">Save directory:</label>
             <div class="input-group">
@@ -43,54 +45,69 @@
                 <button id="browse" class="btn btn-outline-secondary" type="button">Browse</button>
             </div>
         </div>
+        <!-- Days of the Week Checkboxes -->
         <div class="mb-3 text-center">
-            <label class="form-label d-block">Takes screenshots from:</label>
+            <label class="form-label d-block" id="daysLabel">Takes screenshots:</label>
+            <div class="d-inline-flex flex-wrap justify-content-center">
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Sun" id="daySun">
+                    <label class="form-check-label" for="daySun">Sun</label>
+                </div>
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Mon" id="dayMon" checked>
+                    <label class="form-check-label" for="dayMon">Mon</label>
+                </div>
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Tue" id="dayTue" checked>
+                    <label class="form-check-label" for="dayTue">Tue</label>
+                </div>
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Wed" id="dayWed" checked>
+                    <label class="form-check-label" for="dayWed">Wed</label>
+                </div>
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Thu" id="dayThu" checked>
+                    <label class="form-check-label" for="dayThu">Thu</label>
+                </div>
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Fri" id="dayFri" checked>
+                    <label class="form-check-label" for="dayFri">Fri</label>
+                </div>
+                <div class="form-check mx-1">
+                    <input class="form-check-input" type="checkbox" value="Sat" id="daySat">
+                    <label class="form-check-label" for="daySat">Sat</label>
+                </div>
+            </div>
+        </div>
+        <!-- Time Inputs -->
+        <div class="mb-3 text-center">
+            <label class="form-label d-block" id="timeLabel">Active from:</label>
             <div class="d-inline-flex align-items-center">
-                <!-- The native time picker will display in 24-hour or AM/PM format according to your system settings -->
                 <input type="time" id="startTime" class="form-control" style="width: 150px;" required>
                 <span class="mx-2">to</span>
                 <input type="time" id="endTime" class="form-control" style="width: 150px;" required>
             </div>
         </div>
-        <!-- Centered "Open Save Folder" button -->
+        <!-- Open Save Folder Button -->
         <div class="mb-3 text-center">
             <button id="open-folder" class="btn btn-primary btn-sm">Open Save Folder</button>
         </div>
-        <!-- Full-width, large toggle button -->
+        <!-- Toggle Button -->
         <button id="toggle" class="btn btn-success btn-lg w-100">Start</button>
-
-        <footer class="text-center mt-4">
-            <small>&copy; 2025 <a href="#" id="external-link">Thales Broussard</a>. All rights reserved.</small>
-        </footer>
     </div>
+
+    <div class="container text-center" style="margin-top: -15px;">
+        <small>&copy; 2025 <a href="#" id="author-link">Thales Broussard</a>. All rights reserved.</small>
+    </div>
+
+
     <!-- Local Bootstrap JS bundle -->
     <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="renderer.js"></script>
     <script>
-        //Dynamically updates the X interval minutes
-        document.addEventListener('DOMContentLoaded', function () {
-                const intervalInput = document.getElementById('interval');
-                const intervalValueSpan = document.getElementById('intervalValue');
-
-                // If a saved interval exists, update the input with that value
-                const savedInterval = localStorage.getItem('lastInterval');
-                if (savedInterval) {
-                    intervalInput.value = savedInterval;
-                }
-
-                // Immediately update the label to match the input's value
-                intervalValueSpan.textContent = intervalInput.value;
-
-                // Update the label in real time when the input changes
-                intervalInput.addEventListener('input', function () {
-                    intervalValueSpan.textContent = intervalInput.value;
-                });
-            });
-    </script>
-    <script>
-        //Open website link in default browser
+        // Open external link in the default browser
         const { shell } = require('electron');
-        document.getElementById('external-link').addEventListener('click', function (e) {
+        document.getElementById('author-link').addEventListener('click', function (e) {
             e.preventDefault();
             shell.openExternal('https://www.thalesbroussard.com');
         });

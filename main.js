@@ -12,6 +12,7 @@ let currentIntervalMinutes = 10;
 let saveDirectory = '';
 let allowedStartTime = '';
 let allowedEndTime = '';
+let allowedDays = [];
 
 let systemLocked = false;
 powerMonitor.on('lock-screen', () => { systemLocked = true; });
@@ -20,7 +21,7 @@ powerMonitor.on('unlock-screen', () => { systemLocked = false; });
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 500,
-        height: 550,
+        height: 600,
         resizable: false,
         webPreferences: {
             nodeIntegration: true,
@@ -83,6 +84,18 @@ function getTimeString() {
     return `${hours}-${minutes}`;
 }
 
+function isAllowedDay() {
+    if (!allowedDays || allowedDays.length === 0) {
+        allowedDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    }
+    const now = new Date();
+    const currentDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][now.getDay()];
+    console.log("Allowed days:", allowedDays);
+    console.log("Current day:", currentDay);
+    return allowedDays.includes(currentDay);
+}
+
+
 function isWithinAllowedTime() {
     if (!allowedStartTime || !allowedEndTime) return true; // if not set, allow always
     const now = new Date();
@@ -91,12 +104,22 @@ function isWithinAllowedTime() {
     const [endHour, endMinute] = allowedEndTime.split(':').map(Number);
     const startTotal = startHour * 60 + startMinute;
     const endTotal = endHour * 60 + endMinute;
-    // Assuming allowed period does not cross midnight.
+    const currentHours = String(now.getHours()).padStart(2, '0');
+    const currentMins = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${currentHours}:${currentMins}`;
+    console.log(`Allowed time: ${allowedStartTime}-${allowedEndTime}`);
+    console.log(`Current time: ${currentTime}`);
     return currentMinutes >= startTotal && currentMinutes <= endTotal;
 }
 
+
 function takeScreenshot() {
-    // Only proceed if system is not locked and current time is within allowed range.
+    // First, check if today's day is selected.
+    if (!isAllowedDay()) {
+        console.log("Today is not selected, skipping screenshot.");
+        return;
+    }
+    // Then check system lock and allowed time.
     if (systemLocked) {
         console.log('System is locked or asleep, skipping screenshot.');
         return;
@@ -133,12 +156,13 @@ ipcMain.handle('get-default-folder', async () => {
     return app.getPath('documents');
 });
 
-// Now accepts startTime and endTime (as "HH:MM")
-ipcMain.on('start-screenshot', (event, intervalMinutes, directory, startTime, endTime) => {
+// Now accepts allowedDays (as an array) from the renderer.
+ipcMain.on('start-screenshot', (event, intervalMinutes, directory, startTime, endTime, daysFromRenderer) => {
     currentIntervalMinutes = intervalMinutes;
     saveDirectory = directory;
     allowedStartTime = startTime;
     allowedEndTime = endTime;
+    allowedDays = daysFromRenderer;
     if (!saveDirectory) return;
     if (captureInterval) clearInterval(captureInterval);
     isCapturing = true;
@@ -186,7 +210,6 @@ autoUpdater.on('update-downloaded', (info) => {
 app.on('ready', () => {
     createWindow();
     createTray();
-    // Check for updates and notify the user.
     autoUpdater.checkForUpdatesAndNotify();
 });
 app.on('window-all-closed', () => { });
