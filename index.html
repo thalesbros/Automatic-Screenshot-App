@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Screenshot App</title>
+    <title>Automatic Screenshot App</title>
     <!-- Local Bootstrap CSS -->
     <link href="./node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -30,8 +30,10 @@
         <h1 class="mb-4 text-center">Automatic Screenshot App</h1>
         <hr>
         <div class="mb-3 text-center">
-            <label for="interval" class="form-label">Take screenshot in X minutes:</label>
-            <input type="number" id="interval" class="form-control mx-auto" value="10" min="1" max="60" step="5"
+            <label for="interval" class="form-label">
+                Take screenshot every <span id="intervalValue">10</span> minutes:
+            </label>
+            <input type="number" id="interval" class="form-control mx-auto" value="10" min="5" max="60" step="5"
                 style="width: 100px;" required>
         </div>
         <div class="mb-3 text-center">
@@ -56,10 +58,43 @@
         </div>
         <!-- Full-width, large toggle button -->
         <button id="toggle" class="btn btn-success btn-lg w-100">Start</button>
+
+        <footer class="text-center mt-4">
+            <small>&copy; 2025 <a href="#" id="external-link">Thales Broussard</a>. All rights reserved.</small>
+        </footer>
     </div>
     <!-- Local Bootstrap JS bundle -->
     <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="renderer.js"></script>
+    <script>
+        //Dynamically updates the X interval minutes
+        document.addEventListener('DOMContentLoaded', function () {
+                const intervalInput = document.getElementById('interval');
+                const intervalValueSpan = document.getElementById('intervalValue');
+
+                // If a saved interval exists, update the input with that value
+                const savedInterval = localStorage.getItem('lastInterval');
+                if (savedInterval) {
+                    intervalInput.value = savedInterval;
+                }
+
+                // Immediately update the label to match the input's value
+                intervalValueSpan.textContent = intervalInput.value;
+
+                // Update the label in real time when the input changes
+                intervalInput.addEventListener('input', function () {
+                    intervalValueSpan.textContent = intervalInput.value;
+                });
+            });
+    </script>
+    <script>
+        //Open website link in default browser
+        const { shell } = require('electron');
+        document.getElementById('external-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            shell.openExternal('https://www.thalesbroussard.com');
+        });
+    </script>
 </body>
 
 </html>

@@ -20,7 +20,7 @@ powerMonitor.on('unlock-screen', () => { systemLocked = false; });
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 500,
-        height: 500,
+        height: 550,
         resizable: false,
         webPreferences: {
             nodeIntegration: true,

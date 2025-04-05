@@ -22,18 +22,26 @@ window.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('lastFolder', defaultDir);
         }
     }
-    // Retrieve and set the saved interval, start time, and end time
+    // Retrieve and set the saved interval
     const lastInterval = localStorage.getItem('lastInterval');
     if (lastInterval) {
         intervalInput.value = lastInterval;
     }
+    // Retrieve and set the saved start time or set default to 09:00 (military format)
     const lastStartTime = localStorage.getItem('lastStartTime');
     if (lastStartTime) {
         startTimeInput.value = lastStartTime;
+    } else {
+        startTimeInput.value = "09:00";
+        localStorage.setItem('lastStartTime', "09:00");
     }
+    // Retrieve and set the saved end time or set default to 17:00 (military format)
     const lastEndTime = localStorage.getItem('lastEndTime');
     if (lastEndTime) {
         endTimeInput.value = lastEndTime;
+    } else {
+        endTimeInput.value = "17:00";
+        localStorage.setItem('lastEndTime', "17:00");
     }
 });
 
