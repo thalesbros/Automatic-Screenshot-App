@@ -22,12 +22,37 @@
             background-color: #C60000 !important;
             border-color: #C60000 !important;
         }
+
+        #app-version {
+            font-size: 0.8rem !important;
+            padding: 0.2rem 0.4rem !important;
+        }
+
+        #app-version:hover {
+            cursor: pointer;
+        }
+
+        .form-select,
+        input[type="time"] {
+            text-align: center;
+            text-align-last: center;
+        }
     </style>
 </head>
 
 <body>
     <div class="container py-4">
-        <h1 class="mb-4 text-center">Automatic Screenshot App</h1>
+        <!-- Title with version pill -->
+        <div class="text-center">
+            <h1 class="mb-2 position-relative d-inline-block">
+                Automatic Screenshot App
+                <span id="app-version"
+                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                    vX.X.X
+                    <span class="visually-hidden">version</span>
+                </span>
+            </h1>
+        </div>
         <hr>
         <!-- Interval Input -->
         <div class="mb-3 text-center">
@@ -88,6 +113,33 @@
                 <input type="time" id="endTime" class="form-control" style="width: 150px;" required>
             </div>
         </div>
+        <!-- New: Two-column layout for Screenshot Dimension and JPEG Quality -->
+        <div class="mb-3 text-center">
+            <div class="row">
+                <div class="col">
+                    <label for="screenshot-dimension" class="form-label">
+                        Screenshot dimension: <span id="screenshot-dimension-label">100%</span>
+                    </label>
+                    <select id="screenshot-dimension" class="form-select">
+                        <option value="100" selected>100%</option>
+                        <option value="75">75%</option>
+                        <option value="50">50%</option>
+                        <option value="25">25%</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <label for="jpeg-quality" class="form-label">
+                        Quality of JPEG: <span id="jpeg-quality-label">100%</span>
+                    </label>
+                    <select id="jpeg-quality" class="form-select">
+                        <option value="100" selected>100%</option>
+                        <option value="75">75%</option>
+                        <option value="50">50%</option>
+                        <option value="25">25%</option>
+                    </select>
+                </div>
+            </div>
+        </div>
         <!-- Open Save Folder Button -->
         <div class="mb-3 text-center">
             <button id="open-folder" class="btn btn-primary btn-sm">Open Save Folder</button>
@@ -100,16 +152,18 @@
         <small>&copy; 2025 <a href="#" id="author-link">Thales Broussard</a>. All rights reserved.</small>
     </div>
 
-
     <!-- Local Bootstrap JS bundle -->
     <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="renderer.js"></script>
     <script>
-        // Open external link in the default browser
-        const { shell } = require('electron');
+        // Open external links using the exposed electronAPI
         document.getElementById('author-link').addEventListener('click', function (e) {
             e.preventDefault();
-            shell.openExternal('https://www.thalesbroussard.com');
+            window.electronAPI.openExternal('https://www.thalesbroussard.com');
+        });
+        document.getElementById('app-version').addEventListener('click', function (e) {
+            e.preventDefault();
+            window.electronAPI.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
         });
     </script>
 </body>

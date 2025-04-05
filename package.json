@@ -1,28 +1,31 @@
 {
   "name": "automatic-screenshot-app",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "An Electron app that automatically captures screenshots at user-defined intervals",
   "icon": "assets/icon.png",
   "main": "main.js",
   "author": "Thales Broussard",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac --win"
+    "build": "electron-builder --mac --win",
+    "dist": "electron-builder"
   },
   "dependencies": {
     "bootstrap": "^5.3.5",
     "electron-store": "^10.0.1",
     "electron-updater": "^6.6.2",
-    "screenshot-desktop": "^1.14.0"
+    "screenshot-desktop": "^1.14.0",
+    "sharp": "^0.34.0"
   },
   "devDependencies": {
     "electron": "^25.3.0",
     "electron-builder": "^26.0.12",
-    "electron-icon-maker": "^0.0.5"
+    "electron-reload": "^2.0.0-alpha.1"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/thalesbros/Automatic-Screenshot-App.git"
+  "repository": "https://github.com/thalesbros/Automatic-Screenshot-App",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
   },
   "build": {
     "appId": "com.thalesbroussard.automatic-screenshot-app",
@@ -31,6 +34,7 @@
       "main.js",
       "index.html",
       "renderer.js",
+      "preload.js",
       "assets/mac/**/*",
       "assets/png/**/*",
       "assets/win/**/*",

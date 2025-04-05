@@ -3,6 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const screenshot = require('screenshot-desktop');
 const { autoUpdater } = require('electron-updater');
+const sharp = require('sharp');
+
+if (!app.isPackaged) {
+    require('electron-reload')(__dirname, {
+        electron: require(path.join(__dirname, 'node_modules', 'electron'))
+    });
+}
 
 let mainWindow;
 let tray;
@@ -13,23 +20,33 @@ let saveDirectory = '';
 let allowedStartTime = '';
 let allowedEndTime = '';
 let allowedDays = [];
+// New globals for image settings
+let screenshotDimension = 100; // default 100%
+let screenshotQuality = 100;   // default 100%
 
 let systemLocked = false;
 powerMonitor.on('lock-screen', () => { systemLocked = true; });
 powerMonitor.on('unlock-screen', () => { systemLocked = false; });
 
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 500,
-        height: 600,
+        height: 690,
         resizable: false,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
             devTools: false
         }
     });
     mainWindow.loadFile('index.html');
+    mainWindow.webContents.on('did-finish-load', () => {
+        mainWindow.webContents.send('app-version', app.getVersion());
+    });
     mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -95,9 +112,8 @@ function isAllowedDay() {
     return allowedDays.includes(currentDay);
 }
 
-
 function isWithinAllowedTime() {
-    if (!allowedStartTime || !allowedEndTime) return true; // if not set, allow always
+    if (!allowedStartTime || !allowedEndTime) return true;
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const [startHour, startMinute] = allowedStartTime.split(':').map(Number);
@@ -112,14 +128,11 @@ function isWithinAllowedTime() {
     return currentMinutes >= startTotal && currentMinutes <= endTotal;
 }
 
-
 function takeScreenshot() {
-    // First, check if today's day is selected.
     if (!isAllowedDay()) {
         console.log("Today is not selected, skipping screenshot.");
         return;
     }
-    // Then check system lock and allowed time.
     if (systemLocked) {
         console.log('System is locked or asleep, skipping screenshot.');
         return;
@@ -128,19 +141,34 @@ function takeScreenshot() {
         console.log('Not within allowed time range, skipping screenshot.');
         return;
     }
-
     const dateFolder = getCurrentDateFolder();
     const dayPath = path.join(saveDirectory, dateFolder);
     if (!fs.existsSync(dayPath)) fs.mkdirSync(dayPath, { recursive: true });
     const timeStr = getTimeString();
+
     screenshot.listDisplays().then(displays => {
         displays.forEach((display, index) => {
-            screenshot({ format: 'jpg', quality: 50, screen: display.id })
+            screenshot({ format: 'jpg', quality: screenshotQuality, screen: display.id })
                 .then(img => {
                     const fileName = `${dateFolder}_${timeStr}(${index + 1}).jpeg`;
-                    fs.writeFile(path.join(dayPath, fileName), img, err => {
-                        if (err) console.error(err);
-                    });
+                    if (screenshotDimension < 100) {
+                        sharp(img)
+                            .metadata()
+                            .then(metadata => {
+                                const newWidth = Math.round(metadata.width * (screenshotDimension / 100));
+                                return sharp(img).resize({ width: newWidth }).toBuffer();
+                            })
+                            .then(resizedImg => {
+                                fs.writeFile(path.join(dayPath, fileName), resizedImg, err => {
+                                    if (err) console.error(err);
+                                });
+                            })
+                            .catch(err => console.error("Error resizing image:", err));
+                    } else {
+                        fs.writeFile(path.join(dayPath, fileName), img, err => {
+                            if (err) console.error(err);
+                        });
+                    }
                 })
                 .catch(err => console.error(err));
         });
@@ -156,13 +184,14 @@ ipcMain.handle('get-default-folder', async () => {
     return app.getPath('documents');
 });
 
-// Now accepts allowedDays (as an array) from the renderer.
-ipcMain.on('start-screenshot', (event, intervalMinutes, directory, startTime, endTime, daysFromRenderer) => {
+ipcMain.on('start-screenshot', (event, intervalMinutes, directory, startTime, endTime, daysFromRenderer, dimensionParam, qualityParam) => {
     currentIntervalMinutes = intervalMinutes;
     saveDirectory = directory;
     allowedStartTime = startTime;
     allowedEndTime = endTime;
     allowedDays = daysFromRenderer;
+    screenshotDimension = parseInt(dimensionParam);
+    screenshotQuality = parseInt(qualityParam);
     if (!saveDirectory) return;
     if (captureInterval) clearInterval(captureInterval);
     isCapturing = true;
@@ -188,14 +217,29 @@ ipcMain.on('open-save-folder', (event, directory) => {
     }
 });
 
+// External link handler
+ipcMain.on('open-external', (event, url) => {
+    shell.openExternal(url);
+});
+
+// Auto-updater events
 autoUpdater.on('checking-for-update', () => {
     console.log('Checking for update...');
 });
 autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info);
+    // Force the update download
+    autoUpdater.downloadUpdate();
+    if (mainWindow) {
+        mainWindow.webContents.send('update-status', { hasUpdate: true });
+    }
 });
+
 autoUpdater.on('update-not-available', (info) => {
     console.log('Update not available:', info);
+    if (mainWindow) {
+        mainWindow.webContents.send('update-status', { hasUpdate: false });
+    }
 });
 autoUpdater.on('error', (err) => {
     console.error('Error in auto-updater:', err);
@@ -205,6 +249,19 @@ autoUpdater.on('download-progress', (progressObj) => {
 });
 autoUpdater.on('update-downloaded', (info) => {
     console.log('Update downloaded:', info);
+    const dialogOpts = {
+        type: 'info',
+        buttons: ['Restart', 'Later'],
+        title: 'Application Update',
+        message: 'A new version has been downloaded.',
+        detail: 'Restart the application to apply the updates.'
+    };
+
+    dialog.showMessageBox(dialogOpts).then((returnValue) => {
+        if (returnValue.response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
 });
 
 app.on('ready', () => {

@@ -1,39 +1,64 @@
-const { ipcRenderer } = require('electron');
-
-const intervalInput = document.getElementById('interval');
-const intervalValueSpan = document.getElementById('intervalValue');
-const directoryInput = document.getElementById('directory');
-const browseButton = document.getElementById('browse');
-const toggleButton = document.getElementById('toggle');
-const openFolderButton = document.getElementById('open-folder');
-const startTimeInput = document.getElementById('startTime');
-const endTimeInput = document.getElementById('endTime');
-const timeLabel = document.getElementById('timeLabel');
-const daysLabel = document.getElementById('daysLabel');
-
-let isRunning = false;
-const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-// Update interval label
 document.addEventListener('DOMContentLoaded', () => {
-    // Load saved interval if exists
+    // DOM element references
+    const intervalInput = document.getElementById('interval');
+    const intervalValueSpan = document.getElementById('intervalValue');
+    const directoryInput = document.getElementById('directory');
+    const browseButton = document.getElementById('browse');
+    const toggleButton = document.getElementById('toggle');
+    const openFolderButton = document.getElementById('open-folder');
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+    const timeLabel = document.getElementById('timeLabel');
+    const daysLabel = document.getElementById('daysLabel');
+    const screenshotDimensionSelect = document.getElementById('screenshot-dimension');
+    const jpegQualitySelect = document.getElementById('jpeg-quality');
+    const screenshotDimensionLabel = document.getElementById('screenshot-dimension-label');
+    const jpegQualityLabel = document.getElementById('jpeg-quality-label');
+
+    let isRunning = false;
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    // Helper functions to update labels
+    function updateTimeLabel() {
+        timeLabel.textContent = 'Active from: ' + startTimeInput.value + '-' + endTimeInput.value;
+        localStorage.setItem('lastStartTime', startTimeInput.value);
+        localStorage.setItem('lastEndTime', endTimeInput.value);
+    }
+
+    function updateDaysLabel() {
+        let selected = [];
+        days.forEach(day => {
+            const cb = document.getElementById('day' + day);
+            if (cb && cb.checked) {
+                selected.push(day);
+            }
+        });
+        if (selected.length > 0) {
+            daysLabel.textContent = 'Takes screenshots: ' + selected.join('-');
+        } else {
+            daysLabel.textContent = 'Takes screenshots: None selected';
+        }
+        localStorage.setItem('lastDays', JSON.stringify(selected));
+    }
+
+    // Load saved values and initialize controls
+    // Interval
     const savedInterval = localStorage.getItem('lastInterval');
     if (savedInterval) {
         intervalInput.value = savedInterval;
     }
     intervalValueSpan.textContent = intervalInput.value;
-
     intervalInput.addEventListener('input', () => {
         intervalValueSpan.textContent = intervalInput.value;
         localStorage.setItem('lastInterval', intervalInput.value);
     });
 
-    // Load saved directory or default folder
+    // Directory
     const lastFolder = localStorage.getItem('lastFolder');
     if (lastFolder) {
         directoryInput.value = lastFolder;
     } else {
-        ipcRenderer.invoke('get-default-folder').then(defaultDir => {
+        window.electronAPI.invoke('get-default-folder').then(defaultDir => {
             if (defaultDir) {
                 directoryInput.value = defaultDir;
                 localStorage.setItem('lastFolder', defaultDir);
@@ -41,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Load saved time values or set defaults to 10:00 and 22:00
+    // Time values
     const savedStartTime = localStorage.getItem('lastStartTime');
     const savedEndTime = localStorage.getItem('lastEndTime');
     if (savedStartTime) {
@@ -57,11 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('lastEndTime', "22:00");
     }
     updateTimeLabel();
-
     startTimeInput.addEventListener('input', updateTimeLabel);
     endTimeInput.addEventListener('input', updateTimeLabel);
 
-    // Load saved days or set default (Mon-Fri)
+    // Days checkboxes
     const savedDays = localStorage.getItem('lastDays');
     if (savedDays) {
         let selected = JSON.parse(savedDays);
@@ -81,90 +105,111 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     updateDaysLabel();
-
-    // Add change listeners to day checkboxes
     days.forEach(day => {
         const cb = document.getElementById('day' + day);
         if (cb) {
             cb.addEventListener('change', updateDaysLabel);
         }
     });
-});
 
-browseButton.addEventListener('click', async () => {
-    const dir = await ipcRenderer.invoke('select-directory');
-    if (dir) {
-        directoryInput.value = dir;
-        localStorage.setItem('lastFolder', dir);
-    }
-});
-
-openFolderButton.addEventListener('click', () => {
-    const directory = directoryInput.value;
-    if (directory) {
-        ipcRenderer.send('open-save-folder', directory);
+    // Screenshot Dimension Dropdown
+    if (!localStorage.getItem('screenshotDimension')) {
+        localStorage.setItem('screenshotDimension', screenshotDimensionSelect.value);
     } else {
-        alert('No folder selected.');
+        screenshotDimensionSelect.value = localStorage.getItem('screenshotDimension');
     }
-});
+    screenshotDimensionLabel.textContent = `${screenshotDimensionSelect.value}%`;
+    screenshotDimensionSelect.addEventListener('change', () => {
+        localStorage.setItem('screenshotDimension', screenshotDimensionSelect.value);
+        screenshotDimensionLabel.textContent = `${screenshotDimensionSelect.value}%`;
+    });
 
-toggleButton.addEventListener('click', () => {
-    if (!isRunning) {
-        const interval = parseInt(intervalInput.value);
-        const directory = directoryInput.value;
-        const startTime = startTimeInput.value;
-        const endTime = endTimeInput.value;
-        const daysFromRenderer = JSON.parse(localStorage.getItem('lastDays')) || [];
-        if (!interval || interval < 1) {
-            alert('Please enter a valid interval.');
-            return;
-        }
-        if (!directory) {
-            alert('Please select a save directory.');
-            return;
-        }
-        if (!startTime || !endTime) {
-            alert('Please enter valid start and end times.');
-            return;
-        }
-        ipcRenderer.send('start-screenshot', interval, directory, startTime, endTime, daysFromRenderer);
-        toggleButton.textContent = 'Stop';
-        toggleButton.classList.remove('btn-success');
-        toggleButton.classList.add('btn-danger');
+    // JPEG Quality Dropdown
+    if (!localStorage.getItem('jpegQuality')) {
+        localStorage.setItem('jpegQuality', jpegQualitySelect.value);
     } else {
-        ipcRenderer.send('stop-screenshot');
-        toggleButton.textContent = 'Start';
-        toggleButton.classList.remove('btn-danger');
-        toggleButton.classList.add('btn-success');
+        jpegQualitySelect.value = localStorage.getItem('jpegQuality');
     }
-    isRunning = !isRunning;
-});
+    jpegQualityLabel.textContent = `${jpegQualitySelect.value}%`;
+    jpegQualitySelect.addEventListener('change', () => {
+        localStorage.setItem('jpegQuality', jpegQualitySelect.value);
+        jpegQualityLabel.textContent = `${jpegQualitySelect.value}%`;
+    });
 
-
-ipcRenderer.on('menu-toggle', () => {
-    toggleButton.click();
-});
-
-// Update the time label and save to localStorage
-function updateTimeLabel() {
-    timeLabel.textContent = 'Active from: ' + startTimeInput.value + '-' + endTimeInput.value;
-    localStorage.setItem('lastStartTime', startTimeInput.value);
-    localStorage.setItem('lastEndTime', endTimeInput.value);
-}
-
-// Update the days label based on selected checkboxes and save to localStorage
-function updateDaysLabel() {
-    let selected = [];
-    days.forEach(day => {
-        const cb = document.getElementById('day' + day);
-        if (cb && cb.checked) {
-            selected.push(day);
+    // Browse directory button
+    browseButton.addEventListener('click', async () => {
+        const dir = await window.electronAPI.invoke('select-directory');
+        if (dir) {
+            directoryInput.value = dir;
+            localStorage.setItem('lastFolder', dir);
         }
     });
-    if (selected.length > 0) {
-        daysLabel.textContent = 'Takes screenshots: ' + selected.join('-');
-    } else {
-        daysLabel.textContent = 'Takes screenshots: None selected';
-    }
-    localStorage.setItem('lastDays', JSON.stringify(selected));
-}
+
+    // Open folder button
+    openFolderButton.addEventListener('click', () => {
+        const directory = directoryInput.value;
+        if (directory) {
+            window.electronAPI.send('open-save-folder', directory);
+        } else {
+            alert('No folder selected.');
+        }
+    });
+
+    // Toggle button for starting/stopping screenshot capture
+    toggleButton.addEventListener('click', () => {
+        if (!isRunning) {
+            const interval = parseInt(intervalInput.value);
+            const directory = directoryInput.value;
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            const daysFromRenderer = JSON.parse(localStorage.getItem('lastDays')) || [];
+            const screenshotDimension = screenshotDimensionSelect.value;
+            const jpegQuality = jpegQualitySelect.value;
+            if (!interval || interval < 1) {
+                alert('Please enter a valid interval.');
+                return;
+            }
+            if (!directory) {
+                alert('Please select a save directory.');
+                return;
+            }
+            if (!startTime || !endTime) {
+                alert('Please enter valid start and end times.');
+                return;
+            }
+            window.electronAPI.send('start-screenshot', interval, directory, startTime, endTime, daysFromRenderer, screenshotDimension, jpegQuality);
+            toggleButton.textContent = 'Stop';
+            toggleButton.classList.remove('btn-success');
+            toggleButton.classList.add('btn-danger');
+        } else {
+            window.electronAPI.send('stop-screenshot');
+            toggleButton.textContent = 'Start';
+            toggleButton.classList.remove('btn-danger');
+            toggleButton.classList.add('btn-success');
+        }
+        isRunning = !isRunning;
+    });
+
+    // Listen for menu-toggle event from the tray menu
+    window.electronAPI.onMenuToggle(() => {
+        toggleButton.click();
+    });
+
+    // Listen for app version and update status events
+    window.electronAPI.onAppVersion((version) => {
+        const versionBadge = document.getElementById('app-version');
+        console.log("Current App Version:", version);
+        versionBadge.textContent = `v${version}`;
+    });
+    window.electronAPI.onUpdateStatus((status) => {
+        const versionBadge = document.getElementById('app-version');
+        console.log("Update status received:", status);
+        if (status.hasUpdate) {
+            versionBadge.classList.remove('bg-primary');
+            versionBadge.classList.add('bg-warning');
+        } else {
+            versionBadge.classList.remove('bg-warning');
+            versionBadge.classList.add('bg-primary');
+        }
+    });
+});
