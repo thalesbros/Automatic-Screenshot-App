@@ -12,6 +12,11 @@
 - **Auto-Updating:** Built-in auto-update feature using electron-updater.
 - **Cross-Platform:** Runs on Windows, Mac, and Linux.
 
+## Releases
+
+To download the latest version of Automatic Screenshot App, please visit the [Releases page](https://github.com/thalesbros/Automatic-Screenshot-App/releases) and select the installer for your platform. Simply click the desired release to download and install the app.
+
+
 ## How to Use
 
 1. **Launch the App:**
