@@ -23,7 +23,7 @@ To download the latest version of Automatic Screenshot App, please visit the [Re
    - Open the app from your desktop shortcut or system tray icon.
 
 2. **Set Screenshot Interval:**
-   - Enter the interval (in minutes) in the "Take screenshot in X minutes" field. The input supports values from 1 to 60, in increments of 5.
+   - Enter the interval (in minutes) in the "Take screenshot every X minutes" field. The input supports values from 1 to 60, in increments of 5.
 
 3. **Select Save Directory:**
    - Use the **Browse** button to choose where screenshots will be saved. The default is your Documents folder.
@@ -33,15 +33,21 @@ To download the latest version of Automatic Screenshot App, please visit the [Re
    - Set the start and end times in the time inputs (which will reflect your system’s time format).
    - Screenshots will only be taken if the current time is within this range.
 
-5. **Start/Stop the App:**
+5. **Select Weekdays:**
+   - Use the checkboxes to select the days of the week during which screenshots should be captured.
+   - The app will check if today's day is selected before taking a screenshot.
+   - If the current day is not selected, no screenshot will be taken even if within the active time range.
+
+6. **Start/Stop the App:**
    - Click the **Start** button (green) to begin capturing screenshots.
    - When running, the button changes to **Stop** (red). Click it again to stop the process.
 
-6. **Tray Menu:**
+7. **Tray Menu:**
    - Right-click the tray icon to toggle the screenshot process or to quit the app.
 
-7. **Auto-Updating:**
+8. **Auto-Updating:**
    - The app checks for updates automatically. You’ll be notified when a new version is available.
+
 
 ## Building and Packaging
 
