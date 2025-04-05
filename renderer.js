@@ -11,6 +11,7 @@ const endTimeInput = document.getElementById('endTime');
 let isRunning = false;
 
 window.addEventListener('DOMContentLoaded', async () => {
+    // Retrieve and set the saved directory
     const lastFolder = localStorage.getItem('lastFolder');
     if (lastFolder) {
         directoryInput.value = lastFolder;
@@ -20,6 +21,19 @@ window.addEventListener('DOMContentLoaded', async () => {
             directoryInput.value = defaultDir;
             localStorage.setItem('lastFolder', defaultDir);
         }
+    }
+    // Retrieve and set the saved interval, start time, and end time
+    const lastInterval = localStorage.getItem('lastInterval');
+    if (lastInterval) {
+        intervalInput.value = lastInterval;
+    }
+    const lastStartTime = localStorage.getItem('lastStartTime');
+    if (lastStartTime) {
+        startTimeInput.value = lastStartTime;
+    }
+    const lastEndTime = localStorage.getItem('lastEndTime');
+    if (lastEndTime) {
+        endTimeInput.value = lastEndTime;
     }
 });
 
@@ -58,7 +72,12 @@ toggleButton.addEventListener('click', () => {
             alert('Please enter valid start and end times.');
             return;
         }
+        // Save all input values for next launch
         localStorage.setItem('lastFolder', directory);
+        localStorage.setItem('lastInterval', interval);
+        localStorage.setItem('lastStartTime', startTime);
+        localStorage.setItem('lastEndTime', endTime);
+
         ipcRenderer.send('start-screenshot', interval, directory, startTime, endTime);
         toggleButton.textContent = 'Stop';
         toggleButton.classList.remove('btn-success');
