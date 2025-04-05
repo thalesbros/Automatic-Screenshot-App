@@ -46,3 +46,19 @@ To build the app for distribution, use [electron-builder](https://www.electron.b
    ```bash
    npm install
    npm run build
+   ```
+2. This will package your app into platform-specific installers (e.g., DMG for macOS, NSIS for Windows, AppImage for Linux).
+
+## Contributing
+
+Feel free to fork the repository and submit pull requests. If you encounter issues or have feature requests, please open an issue on GitHub.
+
+## License
+
+This project is licensed under the MIT License.
+
+## Contact
+
+For questions or feedback, please contact [Thales Broussard](https://www.thalesbroussard.com/).
+
+*(Screenshots coming soon!)*
