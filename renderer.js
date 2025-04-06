@@ -18,6 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRunning = false;
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+    function sendUpdatedSettings() {
+        window.electronAPI.send('update-settings', {
+            interval: parseInt(intervalInput.value),
+            directory: directoryInput.value,
+            startTime: startTimeInput.value,
+            endTime: endTimeInput.value,
+            days: JSON.parse(localStorage.getItem('lastDays')) || [],
+            dimension: screenshotDimensionSelect.value,
+            quality: jpegQualitySelect.value
+        });
+    }
+
+
     // Helper functions to update labels
     function updateTimeLabel() {
         timeLabel.textContent = 'Active from: ' + startTimeInput.value + '-' + endTimeInput.value;

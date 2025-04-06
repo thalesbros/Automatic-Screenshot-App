@@ -24,7 +24,7 @@ powerMonitor.on('unlock-screen', () => { systemLocked = false; });
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 500,
+        width: 600,
         height: 690,
         resizable: false,
         webPreferences: {
@@ -70,13 +70,14 @@ function createWindow() {
         }
     });
 
-    // ✅ Keep app running in tray on soft-close (moved inside createWindow)
+    // ✅ Keep app running in tray on soft-close (fixed placement)
     mainWindow.on('close', (event) => {
-        event.preventDefault();
-        mainWindow.hide();
+        if (!app.isQuiting) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
     });
 }
-
 
 function createTray() {
     tray = new Tray(path.join(__dirname, 'assets', 'off16.png'));
@@ -120,7 +121,13 @@ function setTrayMenu() {
 
     trayMenuTemplate.push(
         { type: 'separator' },
-        { label: 'Quit App', click: () => { app.quit(); } }
+        {
+            label: 'Quit App',
+            click: () => {
+                app.isQuiting = true;
+                app.quit();
+            }
+        }
     );
 
     const trayMenu = Menu.buildFromTemplate(trayMenuTemplate);
@@ -240,6 +247,23 @@ ipcMain.on('open-save-folder', (event, directory) => {
 ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
 });
+
+ipcMain.on('update-settings', (event, settings) => {
+    currentIntervalMinutes = settings.interval;
+    saveDirectory = settings.directory;
+    allowedStartTime = settings.startTime;
+    allowedEndTime = settings.endTime;
+    allowedDays = settings.days;
+    screenshotDimension = parseInt(settings.dimension);
+    screenshotQuality = parseInt(settings.quality);
+
+    if (isCapturing) {
+        clearInterval(captureInterval);
+        takeScreenshot();
+        captureInterval = setInterval(takeScreenshot, currentIntervalMinutes * 60 * 1000);
+    }
+});
+
 
 app.on('ready', () => {
     createWindow();

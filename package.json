@@ -1,6 +1,6 @@
 {
   "name": "automatic-screenshot-app",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An Electron app that automatically captures screenshots at user-defined intervals",
   "icon": "assets/icon.png",
   "main": "main.js",
