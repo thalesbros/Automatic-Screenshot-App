@@ -5,6 +5,24 @@
   "icon": "assets/icon.png",
   "main": "main.js",
   "author": "Thales Broussard",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --win --linux",
+    "dist": "electron-builder",
+    "publish": "electron-builder --publish always"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.5",
+    "electron-store": "^10.0.1",
+    "electron-updater": "^6.6.2",
+    "screenshot-desktop": "^1.14.0",
+    "sharp": "^0.34.0"
+  },
+  "devDependencies": {
+    "electron": "^25.3.0",
+    "electron-builder": "^26.0.12",
+    "electron-reload": "^2.0.0-alpha.1"
+  },
   "repository": "https://github.com/thalesbros/Automatic-Screenshot-App",
   "publish": {
     "provider": "github",
@@ -32,24 +50,6 @@
     ],
     "directories": {
       "buildResources": "assets"
-    },
-    "scripts": {
-      "start": "electron .",
-      "build": "electron-builder --mac --win --linux",
-      "dist": "electron-builder",
-      "publish": "electron-builder --publish always"
-    },
-    "dependencies": {
-      "bootstrap": "^5.3.5",
-      "electron-store": "^10.0.1",
-      "electron-updater": "^6.6.2",
-      "screenshot-desktop": "^1.14.0",
-      "sharp": "^0.34.0"
-    },
-    "devDependencies": {
-      "electron": "^25.3.0",
-      "electron-builder": "^26.0.12",
-      "electron-reload": "^2.0.0-alpha.1"
     },
     "mac": {
       "category": "public.app-category.utilities",
