@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const screenshot = require('screenshot-desktop');
 const sharp = require('sharp');
-const { autoUpdater } = require('electron-updater');
+const https = require('https');
 
 let mainWindow;
 let tray;
@@ -31,7 +31,8 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
-            devTools: false
+            devTools: false,
+            zoomFactor: 1
         }
     });
     mainWindow.loadFile('index.html');
@@ -39,9 +40,28 @@ function createWindow() {
         mainWindow.webContents.send('app-version', app.getVersion());
         if (updateAvailable) {
             mainWindow.webContents.send('update-status', { hasUpdate: true });
+
+            dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                buttons: ['Update', 'Later'],
+                defaultId: 0,
+                cancelId: 1,
+                title: 'Update Available',
+                message: 'A new version is available.',
+                detail: 'Click "Update" to download it from GitHub.'
+            }).then(result => {
+                if (result.response === 0) {
+                    shell.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
+                }
+            });
         }
     });
     mainWindow.on('closed', () => { mainWindow = null; });
+
+    // Prevent zooming
+    mainWindow.webContents.setZoomFactor(1);
+    mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
+    // Removed invalid method: setLayoutZoomLevelLimits
 }
 
 function createTray() {
@@ -210,7 +230,49 @@ ipcMain.on('open-external', (event, url) => {
 app.on('ready', () => {
     createWindow();
     createTray();
-    // Placeholder: here you could check if update is needed and set updateAvailable = true, then call setTrayMenu()
+
+    const currentVersion = app.getVersion();
+    const options = {
+        hostname: 'api.github.com',
+        path: '/repos/thalesbros/Automatic-Screenshot-App/releases/latest',
+        headers: { 'User-Agent': 'automatic-screenshot-app' }
+    };
+
+    https.get(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                const latestVersion = json.tag_name?.replace(/^v/, '');
+                if (latestVersion && latestVersion !== currentVersion) {
+                    updateAvailable = true;
+                    if (mainWindow) {
+                        mainWindow.webContents.send('update-status', { hasUpdate: true });
+
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            buttons: ['Update', 'Later'],
+                            defaultId: 0,
+                            cancelId: 1,
+                            title: 'Update Available',
+                            message: 'A new version is available.',
+                            detail: 'Click "Update" to download it from GitHub.'
+                        }).then(result => {
+                            if (result.response === 0) {
+                                shell.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
+                            }
+                        });
+                    }
+                    setTrayMenu();
+                }
+            } catch (err) {
+                console.error('Failed to parse GitHub release version:', err);
+            }
+        });
+    }).on('error', (err) => {
+        console.error('Error checking GitHub releases:', err);
+    });
 });
 
 app.on('activate', () => {
@@ -219,7 +281,7 @@ app.on('activate', () => {
     } else {
         mainWindow.show();
         if (updateAvailable) {
-            mainWindow.webContents.send('update-status', { hasUpdate: updateAvailable });
+            mainWindow.webContents.send('update-status', { hasUpdate: true });
             setTrayMenu();
         }
     }
