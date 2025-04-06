@@ -11,7 +11,6 @@ Automatic Screenshot App is an Electron-based tool that automatically captures s
 - **System Aware:** Skips capturing when your computer is asleep, locked, or running a screensaver.
 - **Tray Integration:** Easily start/stop the process and open the save folder via the system tray.
 - **Dynamic Version Pill:** Displays the current version in a dynamic badge that updates automatically. If a newer update is available, the pill turns yellow to alert the user.
-- **Auto-Updating with Prompt:** The app checks for updates automatically and, once an update is downloaded, forces the user to update by showing a popup. When the user clicks "Restart," the update is installed and the app restarts.
 - **Screenshot Dimension Setting:** A new dropdown allows you to select the screenshot dimension percentage (100%, 75%, 50%, 25%). When set below 100%, the app uses Sharp to resize screenshots accordingly.
 - **JPEG Quality Setting:** A new dropdown lets you choose the JPEG quality (100%, 75%, 50%, 25%) to help reduce file sizes.
 - **Cross-Platform:** Runs on Windows, Mac, and Linux. A Linux build is now available for download.

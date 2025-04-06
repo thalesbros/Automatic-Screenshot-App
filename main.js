@@ -89,6 +89,7 @@ function createTray() {
                 mainWindow.hide();
             } else {
                 mainWindow.show();
+                checkForUpdates();
             }
         } else {
             createWindow();
@@ -264,10 +265,56 @@ ipcMain.on('update-settings', (event, settings) => {
     }
 });
 
+function checkForUpdates() {
+    const currentVersion = app.getVersion();
+    const options = {
+        hostname: 'api.github.com',
+        path: '/repos/thalesbros/Automatic-Screenshot-App/releases/latest',
+        headers: { 'User-Agent': 'automatic-screenshot-app' }
+    };
+
+    https.get(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                const latestVersion = json.tag_name?.replace(/^v/, '');
+                if (latestVersion && latestVersion !== currentVersion && !updateAvailable) {
+                    updateAvailable = true;
+                    if (mainWindow) {
+                        mainWindow.webContents.send('update-status', { hasUpdate: true });
+
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            buttons: ['Update', 'Later'],
+                            defaultId: 0,
+                            cancelId: 1,
+                            title: 'Update Available',
+                            message: 'A new version is available.',
+                            detail: 'Click "Update" to download it from GitHub.'
+                        }).then(result => {
+                            if (result.response === 0) {
+                                shell.openExternal('https://github.com/thalesbros/Automatic-Screenshot-App/releases');
+                            }
+                        });
+                    }
+                    setTrayMenu();
+                }
+            } catch (err) {
+                console.error('Failed to parse GitHub release version:', err);
+            }
+        });
+    }).on('error', (err) => {
+        console.error('Error checking GitHub releases:', err);
+    });
+}
+
 
 app.on('ready', () => {
     createWindow();
     createTray();
+    checkForUpdates();
 
     const currentVersion = app.getVersion();
     const options = {
@@ -321,6 +368,8 @@ app.on('activate', () => {
         if (updateAvailable) {
             mainWindow.webContents.send('update-status', { hasUpdate: true });
             setTrayMenu();
+        } else {
+            checkForUpdates();
         }
     }
 });
