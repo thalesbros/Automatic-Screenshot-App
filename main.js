@@ -31,11 +31,12 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
-            devTools: false,
-            zoomFactor: 1
+            devTools: false
         }
     });
+
     mainWindow.loadFile('index.html');
+
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.send('app-version', app.getVersion());
         if (updateAvailable) {
@@ -56,13 +57,26 @@ function createWindow() {
             });
         }
     });
-    mainWindow.on('closed', () => { mainWindow = null; });
 
-    // Prevent zooming
+    // Disable zoom (pinch and shortcut)
     mainWindow.webContents.setZoomFactor(1);
     mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
-    // Removed invalid method: setLayoutZoomLevelLimits
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (
+            (input.control || input.meta) &&
+            ['+', '-', '=', '0'].includes(input.key.toLowerCase())
+        ) {
+            event.preventDefault();
+        }
+    });
+
+    // ✅ Keep app running in tray on soft-close (moved inside createWindow)
+    mainWindow.on('close', (event) => {
+        event.preventDefault();
+        mainWindow.hide();
+    });
 }
+
 
 function createTray() {
     tray = new Tray(path.join(__dirname, 'assets', 'off16.png'));
@@ -286,5 +300,3 @@ app.on('activate', () => {
         }
     }
 });
-
-app.on('window-all-closed', () => { });

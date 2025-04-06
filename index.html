@@ -8,9 +8,29 @@
     <!-- Local Bootstrap CSS -->
     <link href="./node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Prevent scroll by default */
+        }
+
         body {
-            overflow: hidden;
-            /* Prevent scrolling */
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        @media (max-height: 690px) {
+            html, body {
+            overflow-y: auto; /* Allow vertical scroll on shorter screens */
+            }
+        }
+
+        #app-container {
+            min-height: 100%;
+            padding-bottom: 40px; /* for any fixed bottom content */
         }
 
         .btn-success {
@@ -32,8 +52,7 @@
             cursor: pointer;
         }
 
-        .form-select,
-        input[type="time"] {
+        #interval, .form-select, input[type="time"] {
             text-align: center;
             text-align-last: center;
         }
@@ -41,7 +60,7 @@
 </head>
 
 <body>
-    <div class="container py-4">
+    <div id="app-container" class="container py-4">
         <!-- Title with version pill -->
         <div class="text-center">
             <h1 class="mb-2 position-relative d-inline-block">
@@ -146,10 +165,11 @@
         </div>
         <!-- Toggle Button -->
         <button id="toggle" class="btn btn-success btn-lg w-100">Start</button>
-    </div>
+        <br>
+        <div class="mb-3 text-center" style="margin-top: 10px;">
+            <small>&copy; 2025 <a href="#" id="author-link">Thales Broussard</a>. All rights reserved.</small>
+        </div>
 
-    <div class="container text-center" style="margin-top: -15px;">
-        <small>&copy; 2025 <a href="#" id="author-link">Thales Broussard</a>. All rights reserved.</small>
     </div>
 
     <!-- Local Bootstrap JS bundle -->
